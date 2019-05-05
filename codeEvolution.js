@@ -4,7 +4,7 @@
  var colorList = ["AliceBlue","AntiqueWhite","Aqua","Aquamarine","Azure","Beige","Bisque","BlanchedAlmond","Blue","BlueViolet","Brown","BurlyWood","CadetBlue","Chartreuse","Chocolate","Coral","CornflowerBlue","Cornsilk","Crimson","Cyan","DarkBlue","DarkCyan","DarkGoldenRod","DarkGray","DarkGrey","DarkGreen","DarkKhaki","DarkMagenta","DarkOliveGreen","DarkOrange","DarkOrchid","DarkRed","DarkSalmon","DarkSeaGreen","DarkSlateBlue","DarkSlateGray","DarkSlateGrey","DarkTurquoise","DarkViolet","DeepPink","DeepSkyBlue","DimGray","DimGrey","DodgerBlue","FireBrick","FloralWhite","ForestGreen","Fuchsia","Gainsboro","GhostWhite","Gold","GoldenRod","Gray","Grey","Green","GreenYellow","HoneyDew","HotPink","IndianRed","Indigo","Ivory","Khaki","Lavender","LavenderBlush","LawnGreen","LemonChiffon","LightBlue","LightCoral","LightCyan","LightGoldenRodYellow","LightGray","LightGrey","LightGreen","LightPink","LightSalmon","LightSeaGreen","LightSkyBlue","LightSlateGray","LightSlateGrey","LightSteelBlue","LightYellow","Lime","LimeGreen","Linen","Magenta","Maroon","MediumAquaMarine","MediumBlue","MediumOrchid","MediumPurple","MediumSeaGreen","MediumSlateBlue","MediumSpringGreen","MediumTurquoise","MediumVioletRed","MidnightBlue","MintCream","MistyRose","Moccasin","NavajoWhite","Navy","OldLace","Olive","OliveDrab","Orange","OrangeRed","Orchid","PaleGoldenRod","PaleGreen","PaleTurquoise","PaleVioletRed","PapayaWhip","PeachPuff","Peru","Pink","Plum","PowderBlue","Purple","RebeccaPurple","Red","RosyBrown","RoyalBlue","SaddleBrown","Salmon","SandyBrown","SeaGreen","SeaShell","Sienna","Silver","SkyBlue","SlateBlue","SlateGray","SlateGrey","Snow","SpringGreen","SteelBlue","Tan","Teal","Thistle","Tomato","Turquoise","Violet","Wheat","White","WhiteSmoke"];
  var nouritures=[];
  var populationSize=50;
- var quantiteNouriture=sizeGrille * sizeGrille / 4 ;
+ var quantiteNouriture=sizeGrille * sizeGrille / 3 ;
  var dayDuration = 20;
  var tailleCase = parseInt(38 * 20 / sizeGrille);
  var vitesseDeplacement = 0.025;
@@ -75,6 +75,9 @@ var monitor = function(){
 				infoLines.push('<div>Mutation chance : '+playerList[id][0].mutationRate+'</div>');
 				infoLines.push('<div>Reserve : '+playerList[id][0].reserve+'</div>');
 				infoLines.push('<div>DeathRate : '+playerList[id][0].deathRate+'</div>');
+				infoLines.push('<div>maxEnergy : '+playerList[id][0].maxEnergy+'</div>');
+				infoLines.push('<div>speed : '+playerList[id][0].speed+'</div>');
+				infoLines.push('<div>poid : '+playerList[id][0].poid+'</div>');
 				infoLines.forEach(function(item, index, array)
 				{
 					$("#info").append(item);
@@ -207,7 +210,7 @@ var deplacerPlayers = function(){
 	
 }
 class Player {
-	constructor(color, generation=0, reserve=0, mutationRate=20, deathRate=-1){
+	constructor(color, generation=0, reserve=0, mutationRate=20, deathRate=-1,maxEnergy=40,speed=1, poid=1){
 		this.color = color;
 		this.posX = getRandomInt(0,sizeGrille);
 		this.posY = getRandomInt(0,sizeGrille);
@@ -219,6 +222,11 @@ class Player {
 		this.mutationRate = mutationRate;
 		this.deathRate = deathRate;
 		this.mutant = false;
+		this.energy = maxEnergy;
+		this.maxEnergy = maxEnergy;
+		this.speed = speed;
+		this.poid = poid;
+		this.movementCost = 1/10 * this.poid * this.speed;
 		
 		this.afficher = function(){
 			$("#case"+this.posX+"_"+this.posY).css("background-color", this.color);
@@ -234,8 +242,11 @@ class Player {
 			if (randomMutation <= this.mutationRate)
 			{
 				this.mutant=true;
-				this.mutationRate += getRandomInt(0,2);
-				this.reserve+=getRandomInt(0,2);
+				this.mutationRate = this.mutationRate + getRandomInt(-1,2) > 0 ? this.mutationRate + getRandomInt(-1,2) : 0;
+				this.reserve=this.reserve + getRandomInt(-1,2) > 0 ? this.reserve + getRandomInt(-1,2) : 0;
+				this.maxEnergy=this.maxEnergy + getRandomInt(-1,2) > 0 ? this.maxEnergy + getRandomInt(-1,2) : 0;
+				this.speed=this.speed + getRandomInt(-1,2) > 0 ? this.speed + getRandomInt(-1,2) : 0;
+				// todo gerer poid
 			}
 			return this.mutant;
 		}
@@ -244,7 +255,7 @@ class Player {
 				
 				var newColor = playerList.length % colorList.length;
 				this.deathRate-=1;
-				var newBorn = new Player(colorList[newColor],playerList.length,this.reserve, this.mutationRate,this.deathRate-1);
+				var newBorn = new Player(colorList[newColor],playerList.length,this.reserve, this.mutationRate,this.deathRate-1, this.maxEnergy, this.speed, this.poid);
 				
 				if (newBorn.mutate() == true){
 					//if (playerList.length == this.generation + 1){
@@ -255,12 +266,12 @@ class Player {
 							if (item.length > 0)
 							{
 								if (item[0].reserve == newBorn.reserve
+								&& item[0].maxEnergy == newBorn.maxEnergy
+								&& item[0].speed == newBorn.speed
+								&& item[0].poid == newBorn.poid
 								){
 								newBorn.color = item[0].color;
 								newBorn.generation = item[0].generation;
-								newBorn.reserve = item[0].reserve;
-								newBorn.mutationRate = item[0].mutationRate;
-								newBorn.mutant = item[0].mutant;
 								newBorn.reproductionCost = item[0].reproductionCost;
 								found=true;
 								item.push(newBorn);
@@ -290,7 +301,29 @@ class Player {
 				//console.log(this.nouriture);
 			}
 		}
-		this.move = function(){
+		this.eat = function(){
+			if (this.nouriture > 0){
+				this.nouriture-=1;
+				this.energy=+1;
+				return true;
+			}
+			if (this.currReserve > 0){
+				this.currReserve-=1;
+				this.energy=+1;
+				return true;
+			}
+			return false;
+			
+		}
+		this.move = function(turn=0){
+			if (turn >= this.speed)
+				return;
+			if (this.energy < this.movementCost){
+				if (this.eat()){
+					return this.move();
+				}
+				return;
+			}
 			this.cacher();
 			var randomMove = getRandomInt(0,5)
 			switch(randomMove){
@@ -311,9 +344,14 @@ class Player {
 						this.posY+=1;
 					break;
 			}
+			this.energy-=this.movementCost;
+			this.afficher();
+			return this.move(turn + 1);
 			
 			
-			this.afficher()
+			
+			
+			
 		}
 	}
 }
