@@ -316,8 +316,11 @@ class Player {
 			
 		}
 		this.move = function(turn=0){
-			if (turn >= this.speed)
+			if (turn >= this.speed){
+				this.afficher();
 				return;
+			}
+			
 			if (this.energy < this.movementCost){
 				if (this.eat()){
 					return this.move();
